@@ -1,0 +1,6 @@
+# pg_testgen extension
+comment = 'PostgreSQL test data generator'
+default_version = '1.0'
+module_pathname = '$libdir/pg_testgen'
+relocatable = true
+trusted = true
