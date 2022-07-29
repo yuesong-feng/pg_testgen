@@ -12,7 +12,7 @@ SHLIB_LINK_INTERNAL = $(libpq)
 EXTENSION = pg_testgen
 DATA = pg_testgen--1.0.sql
 
-REGRESS = pg_testgen_regress
+REGRESS = pg_testgen # sql、expected 文件夹下的测试，
 
 ifdef USE_PGXS
 PG_CONFIG = pg_config
