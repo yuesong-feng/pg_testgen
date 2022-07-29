@@ -4,34 +4,11 @@
 
 PG_MODULE_MAGIC;
 
-PG_FUNCTION_INFO_V1(rand_int);
-Datum rand_int(PG_FUNCTION_ARGS){
-    Assert(fcinfo->nargs == 0 || fcinfo->nargs == 2);
-    int32 ret = 0;
-    if(fcinfo->nargs == 0){
-        ret = rand();
-    } else if(fcinfo->nargs == 2){
-        int32 min = PG_GETARG_INT32(0);
-        int32 max = PG_GETARG_INT32(1);
-        ret = rand() % (max - min + 1) + min;
-    }
-    PG_RETURN_INT32(ret);
+static inline int32 rand_int_internal(int min, int max){
+    return rand() % (max - min + 1) + min;
 }
 
-PG_FUNCTION_INFO_V1(rand_text);
-Datum rand_text(PG_FUNCTION_ARGS){
-    Assert(fcinfo->nargs == 0 || fcinfo->nargs == 1 || fcinfo->nargs == 2);
-    int32 size = 0;
-    if(fcinfo->nargs == 1){
-        size = PG_GETARG_INT32(0);
-    } else if(fcinfo->nargs == 0){
-        size = rand() % 32 + 1;
-    } else if(fcinfo->nargs == 2){
-        int32 min = PG_GETARG_INT32(0);
-        int32 max = PG_GETARG_INT32(1);
-        size = rand() % (max - min + 1) + min;
-    }
-
+static inline text *rand_text_internal(int size){
     text *t = (text *)palloc(VARHDRSZ + size);
     SET_VARSIZE(t, VARHDRSZ + size);
 
@@ -54,6 +31,38 @@ Datum rand_text(PG_FUNCTION_ARGS){
         *p = ch;
         p++;
     }
+    return t;
+}
+
+PG_FUNCTION_INFO_V1(rand_int);
+Datum rand_int(PG_FUNCTION_ARGS){
+    Assert(fcinfo->nargs == 0 || fcinfo->nargs == 2);
+    int32 ret = 0;
+    int32 min = 0;
+    int32 max = INT32_MAX;
+    if(fcinfo->nargs == 2){
+        min = PG_GETARG_INT32(0);
+        max = PG_GETARG_INT32(1);
+    }
+    ret = rand_int_internal(min, max);
+    PG_RETURN_INT32(ret);
+}
+
+PG_FUNCTION_INFO_V1(rand_text);
+Datum rand_text(PG_FUNCTION_ARGS){
+    Assert(fcinfo->nargs == 0 || fcinfo->nargs == 1 || fcinfo->nargs == 2);
+    int32 size = 0;
+    if(fcinfo->nargs == 1){
+        size = PG_GETARG_INT32(0);
+    } else if(fcinfo->nargs == 0){
+        size = rand() % 32 + 1;
+    } else if(fcinfo->nargs == 2){
+        int32 min = PG_GETARG_INT32(0);
+        int32 max = PG_GETARG_INT32(1);
+        size = rand() % (max - min + 1) + min;
+    }
+
+    text *t = rand_text_internal(size);
     PG_RETURN_TEXT_P(t);
 }
 
@@ -94,11 +103,7 @@ rows_int(PG_FUNCTION_ARGS)
     }
     if (funcctx->call_cntr < funcctx->max_calls)    /* do when there is more left to send */
     {
-        if(fcinfo->nargs == 1){
-            each = rand();
-        } else if(fcinfo->nargs == 3){
-            each = rand() % (max - min + 1) + min;
-        }
+        each = rand_int_internal(min, max);
         SRF_RETURN_NEXT(funcctx, Int32GetDatum(each));
     }
     else    /* do when there is no more left */
@@ -149,29 +154,7 @@ rows_text(PG_FUNCTION_ARGS)
     
     if (funcctx->call_cntr < funcctx->max_calls)    /* do when there is more left to send */
     {
-        text *t = (text *)palloc(VARHDRSZ + size);
-        SET_VARSIZE(t, VARHDRSZ + size);
-
-        int flag = 0;
-        char ch;
-        char *p = (char *)VARDATA(t);
-        for(int i = 0; i < size; ++i){
-            flag = rand() % 3;
-            switch(flag){
-                case 0:
-                    ch = 'A' + rand() % 26;
-                    break;
-                case 1:
-                    ch = 'a' + rand() % 26;
-                    break;
-                case 2:
-                    ch = '0' + rand() % 10;
-                    break;
-            }
-            *p = ch;
-            p++;
-        }
-
+        text *t = rand_text_internal(size);
         SRF_RETURN_NEXT(funcctx, PointerGetDatum(t));
     }
     else    /* do when there is no more left */
