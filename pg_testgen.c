@@ -11,7 +11,6 @@ static inline int32 rand_int_internal(int min, int max){
 static inline text *rand_text_internal(int size){
     text *t = (text *)palloc(VARHDRSZ + size);
     SET_VARSIZE(t, VARHDRSZ + size);
-
     int flag = 0;
     char ch;
     char *p = (char *)VARDATA(t);
@@ -37,15 +36,9 @@ static inline text *rand_text_internal(int size){
 PG_FUNCTION_INFO_V1(rand_int);
 Datum rand_int(PG_FUNCTION_ARGS){
     Assert(fcinfo->nargs == 0 || fcinfo->nargs == 2);
-    int32 ret = 0;
-    int32 min = 0;
-    int32 max = INT32_MAX;
-    if(fcinfo->nargs == 2){
-        min = PG_GETARG_INT32(0);
-        max = PG_GETARG_INT32(1);
-    }
-    ret = rand_int_internal(min, max);
-    PG_RETURN_INT32(ret);
+    int32 min = fcinfo->nargs == 2 ? PG_GETARG_INT32(0) : 0;
+    int32 max = fcinfo->nargs == 2 ? PG_GETARG_INT32(1) : INT32_MAX;
+    PG_RETURN_INT32(rand_int_internal(min, max));
 }
 
 PG_FUNCTION_INFO_V1(rand_text);
@@ -94,17 +87,12 @@ rows_int(PG_FUNCTION_ARGS)
 
     /* stuff done on every call of the function */
     funcctx = SRF_PERCALL_SETUP();
-    int32 each = 0;
-    int32 min = 0;
-    int32 max = INT32_MAX;
-    if(fcinfo->nargs == 3){
-        min = PG_GETARG_INT32(1);
-        max = PG_GETARG_INT32(2);
-    }
+
     if (funcctx->call_cntr < funcctx->max_calls)    /* do when there is more left to send */
     {
-        each = rand_int_internal(min, max);
-        SRF_RETURN_NEXT(funcctx, Int32GetDatum(each));
+        int32 min = fcinfo->nargs == 3 ? PG_GETARG_INT32(1) : 0;
+        int32 max = fcinfo->nargs == 3 ? PG_GETARG_INT32(2) : INT32_MAX;
+        SRF_RETURN_NEXT(funcctx, Int32GetDatum(rand_int_internal(min, max)));
     }
     else    /* do when there is no more left */
     {
@@ -162,3 +150,4 @@ rows_text(PG_FUNCTION_ARGS)
         SRF_RETURN_DONE(funcctx);
     }
 }
+
