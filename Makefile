@@ -1,9 +1,7 @@
 # contrib/pg_testgen/Makefile
 
 MODULE_big = pg_testgen
-OBJS = \
-	$(WIN32RES) \
-	pg_testgen.o
+OBJS = pg_testgen.o $(WIN32RES) 
 PGFILEDESC = "pg_testgen - test data generator"
 
 PG_CPPFLAGS = -I$(libpq_srcdir)
