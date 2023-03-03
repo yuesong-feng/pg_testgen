@@ -6,8 +6,8 @@ pg_testgen插件可以产生大量随机数据，方便进行数据库开发测�
 
 ### 安装方法：
 插件需放到`contrib`目录，推荐使用`git submodule`
+或者直接使用PGXS，USE_PGXS=1，更加方便。
 ```bash
-cd contrib/pg_testgen //进入插件目录
 make
 make install
 ```
